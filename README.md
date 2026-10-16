@@ -5,6 +5,7 @@ An automated pipeline that generates a continuously growing **DPO (Direct Prefer
 For each prompt, the same model answers twice under two different system prompts: a thorough expert one (**chosen**) and a terse, superficial one (**rejected**). The quality contrast gives preference pairs without human annotation.
 
 - **Dataset:** [`iPwnds/Project-Silkworm`](https://huggingface.co/datasets/iPwnds/Project-Silkworm) on Hugging Face
+- **Website:** [lumenworksco.github.io/-Project-Silkworm](https://lumenworksco.github.io/-Project-Silkworm/)
 - **Dataset card:** see [`DATASET_CARD.md`](DATASET_CARD.md)
 - **Status at last run:** ~2,870 accepted pairs from ~4,750 generations, across 17 domains
 
@@ -59,6 +60,17 @@ Set in `.env` (see `.env.example`):
 | `topics.py` | Topic lists and prompt templates |
 | `uploader.py` | Local storage, stats and Hub upload |
 | `config.py` | Environment-driven settings and system prompts |
+| `site/` | Project website (static, deployed to GitHub Pages) |
+| `tests/` | Pytest suite |
+
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+```
+
+Covers prompt sampling, the quality filter and local storage. The Hub upload and live API calls are not tested.
 
 ## Using the dataset
 
