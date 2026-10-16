@@ -6,7 +6,7 @@ For each prompt, the same model answers twice under two different system prompts
 
 - **Dataset:** [`iPwnds/Project-Silkworm`](https://huggingface.co/datasets/iPwnds/Project-Silkworm) on Hugging Face
 - **Dataset card:** see [`DATASET_CARD.md`](DATASET_CARD.md)
-- **Status at last run:** ~2,870 accepted pairs from ~4,750 generations, across 10 domains
+- **Status at last run:** ~2,870 accepted pairs from ~4,750 generations, across 17 domains
 
 ## How it works
 
@@ -17,7 +17,7 @@ topics.py ──► sample_prompt() ──► generator.py ──► quality fil
                                                    data/dataset.parquet ──► Hugging Face Hub
 ```
 
-1. `topics.py` samples a topic from 10 domains (science, technology, mathematics, history, philosophy, economics, psychology, health, culture, practical) and builds a prompt.
+1. `topics.py` samples a topic from 17 domains (science, technology, mathematics, history, philosophy, economics, psychology, health, culture, practical, environment, politics, law, linguistics, literature, astronomy, data science) and builds a prompt.
 2. `generator.py` calls the HF Serverless Inference API twice with retries and exponential backoff: once with the expert system prompt (max 512 tokens) and once with the terse one (max 256 tokens).
 3. Pairs are discarded if the chosen answer is shorter than `MIN_CHOSEN_LENGTH`, the rejected one is shorter than `MIN_REJECTED_LENGTH`, or the two are identical.
 4. Accepted pairs are appended to `data/pending.jsonl`. Every `UPLOAD_EVERY` pairs, `uploader.py` merges them into `data/dataset.parquet` and uploads it. Prompts already in the parquet are skipped.

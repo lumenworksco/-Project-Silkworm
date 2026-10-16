@@ -12,12 +12,12 @@ tags:
   - instruction-following
   - rlhf
 size_categories:
-  - n<1K
+  - 1K<n<10K
 ---
 
 # Project Silkworm
 
-A continuously growing DPO (Direct Preference Optimization) preference dataset spanning 10 knowledge domains. Generated automatically using the HuggingFace Serverless Inference API and uploaded incrementally — the dataset grows larger every day.
+A continuously growing DPO (Direct Preference Optimization) preference dataset spanning 17 knowledge domains. Generated automatically using the HuggingFace Serverless Inference API and uploaded incrementally — the dataset grows larger every day.
 
 ## Dataset Description
 
@@ -39,18 +39,19 @@ This natural quality contrast makes the dataset well-suited for DPO fine-tuning 
 
 ## Domains
 
-Prompts are sampled uniformly across 10 categories:
+Prompts are sampled uniformly across 17 categories:
 
-- Science, Technology, Mathematics
-- History, Philosophy, Economics
-- Psychology, Health, Culture, Practical
+- Science, Technology, Mathematics, History, Philosophy
+- Economics, Psychology, Health, Culture, Practical
+- Environment, Politics, Law, Linguistics, Literature
+- Astronomy, Data Science
 
 ## Generation
 
 - **Generator**: `meta-llama/Llama-3.1-8B-Instruct` via HuggingFace Serverless Inference
 - **Chosen system prompt**: expert assistant, thorough and structured
 - **Rejected system prompt**: casual assistant, brief and superficial
-- **Quality filter**: pairs where either response is below 80 characters or the responses are identical are discarded
+- **Quality filter**: pairs where either response is below 200 (chosen) or 30 (rejected) characters or the responses are identical are discarded
 
 ## Intended Use
 

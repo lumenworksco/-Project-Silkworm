@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Silkworm — a self-growing DPO preference dataset</title>
+<meta name="description" content="An automated pipeline that generates DPO preference pairs by answering the same prompt under an expert and a terse system prompt, and publishes them to the Hugging Face Hub.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%238a5a2b%27/%3E%3Ctext x=%2716%27 y=%2723%27 font-size=%2720%27 text-anchor=%27middle%27 fill=%27white%27 font-family=%27Georgia%27%3ES%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#faf8f4; --surface:#fff; --text:#1d1b18; --muted:#6b665e; --line:#e6e1d8;
+  --accent:#8a5a2b; --good:#2f6f4f; --good-bg:#e9f4ee; --bad:#9a3b2e; --bad-bg:#f8ece9; --code:#f1ede5;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#14120f; --surface:#1d1a16; --text:#ece7de; --muted:#9a948a; --line:#2e2a24;
+    --accent:#d9a066; --good:#7ccaa0; --good-bg:#18271f; --bad:#e49a8d; --bad-bg:#2b1b18; --code:#24201a;}
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:0 16px}
+a{color:var(--accent)}
+nav{border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+nav .wrap{display:flex;gap:20px;align-items:center;height:52px;overflow-x:auto;white-space:nowrap}
+nav b{margin-right:auto;font-family:Georgia,serif;font-size:18px}
+nav a{color:var(--muted);text-decoration:none;font-size:14px}
+nav a:hover{color:var(--text)}
+header{padding:72px 0 40px}
+h1{font:700 clamp(36px,7vw,60px)/1.1 Georgia,serif;margin:0 0 16px;letter-spacing:-.02em}
+.lead{font-size:19px;color:var(--muted);max-width:640px;margin:0 0 28px}
+.btns{display:flex;gap:12px;flex-wrap:wrap}
+.btn{padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text);text-decoration:none;font-weight:600;font-size:15px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+section{padding:40px 0;border-top:1px solid var(--line)}
+h2{font:700 28px/1.2 Georgia,serif;margin:0 0 8px}
+.sub{color:var(--muted);margin:0 0 24px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.stat b{display:block;font:700 30px Georgia,serif}
+.stat span{color:var(--muted);font-size:13px}
+.steps{counter-reset:s;list-style:none;padding:0;display:grid;gap:12px}
+.steps li{counter-increment:s;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px 14px 52px;position:relative}
+.steps li::before{content:counter(s);position:absolute;left:14px;top:14px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--bg);display:grid;place-items:center;font-weight:700;font-size:14px}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13.5px}
+code{background:var(--code);padding:1px 5px;border-radius:4px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow-x:auto;margin:0 0 12px}
+pre code{background:none;padding:0}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tabs button{font:inherit;font-size:13px;padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+.tabs button[aria-pressed=true]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.pair{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:760px){.pair{grid-template-columns:2fr 1fr}}
+.card{border-radius:10px;padding:16px;border:1px solid var(--line)}
+.card h3{margin:0 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.card.good{background:var(--good-bg)} .card.good h3{color:var(--good)}
+.card.bad{background:var(--bad-bg)} .card.bad h3{color:var(--bad)}
+.card p{margin:0;white-space:pre-wrap;font-size:14.5px}
+.q{font:italic 19px Georgia,serif;margin:0 0 14px}
+.note{font-size:14px;color:var(--muted);margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:14.5px;display:block;overflow-x:auto}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips span{background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:3px 12px;font-size:14px}
+.warn{background:var(--surface);border-left:3px solid var(--accent);padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:10px}
+footer{padding:32px 0 56px;color:var(--muted);font-size:14px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <b>Silkworm</b>
+  <a href="#how">How it works</a><a href="#examples">Examples</a><a href="#use">Use it</a><a href="#run">Run it</a><a href="#limits">Limitations</a>
+</div></nav>
+
+<header><div class="wrap">
+  <h1>Project Silkworm</h1>
+  <p class="lead">An automated pipeline that spins out a growing DPO preference dataset. Same model, same prompt, two system prompts: one expert, one lazy. The gap between the answers becomes the training signal.</p>
+  <div class="btns">
+    <a class="btn primary" href="https://huggingface.co/datasets/iPwnds/Project-Silkworm">Dataset on Hugging Face</a>
+    <a class="btn" href="https://github.com/lumenworksco/-Project-Silkworm">Source on GitHub</a>
+  </div>
+</div></header>
+
+<main class="wrap">
+<section style="border-top:0;padding-top:0">
+  <div class="stats">
+    <div class="stat"><b>2,870</b><span>accepted pairs (at last run)</span></div>
+    <div class="stat"><b>4,758</b><span>generations attempted</span></div>
+    <div class="stat"><b>17</b><span>domains in the topic list</span></div>
+    <div class="stat"><b>63</b><span>uploads to the Hub</span></div>
+  </div>
+  <p class="note">Snapshot from the pipeline's local stats, covering runs from 2026-06-08 to 2026-08-18. The Hub dataset is the source of truth for current size.</p>
+</section>
+
+<section id="how">
+  <h2>How it works</h2>
+  <p class="sub">A loop that generates, filters, batches and uploads. No human annotation.</p>
+  <ol class="steps">
+    <li><b>Sample a prompt.</b> <code>topics.py</code> picks a domain, a topic (about 50 per domain) and one of 30 prompt templates, e.g. “What is {topic} and why does it matter?”</li>
+    <li><b>Generate twice.</b> <code>generator.py</code> calls Llama 3.1 8B Instruct through the HF Inference API: once as a thorough expert (<em>chosen</em>, up to 512 tokens), once as a hurried, superficial assistant (<em>rejected</em>, up to 256 tokens). Retries use exponential backoff.</li>
+    <li><b>Filter.</b> Pairs are dropped if the chosen answer is under 200 characters, the rejected under 30, or both are identical. Prompts already in the dataset are skipped.</li>
+    <li><b>Batch and upload.</b> Accepted pairs go to <code>data/pending.jsonl</code>. Every 50 pairs <code>uploader.py</code> merges them into a Parquet file and pushes it to the Hub.</li>
+    <li><b>Watch it run.</b> <code>main.py</code> shows a live terminal dashboard; Ctrl+C stops cleanly and uploads the final batch.</li>
+  </ol>
+  <h3 style="margin:28px 0 10px;font-size:16px">Domains</h3>
+  <div class="chips" id="domains"></div>
+</section>
+
+<section id="examples">
+  <h2>Example pairs</h2>
+  <p class="sub">Real rows from the dataset (chosen answers trimmed for display).</p>
+  <div class="tabs" id="tabs" role="group" aria-label="Choose an example"></div>
+  <p class="q" id="q"></p>
+  <div class="pair">
+    <div class="card good"><h3>Chosen · expert prompt</h3><p id="ch"></p></div>
+    <div class="card bad"><h3>Rejected · terse prompt</h3><p id="rj"></p></div>
+  </div>
+  <p class="note">Chosen answers are fluent but not fact-checked. Some contain errors. See limitations below.</p>
+</section>
+
+<section id="use">
+  <h2>Use the dataset</h2>
+  <p class="sub">Columns: <code>prompt</code>, <code>chosen</code>, <code>rejected</code>, <code>topic</code>, <code>timestamp</code>. Works with TRL's <code>DPOTrainer</code>.</p>
+<pre><code>from datasets import load_dataset
+
+ds = load_dataset("iPwnds/Project-Silkworm", split="train")
+print(ds[0]["prompt"])</code></pre>
+  <p class="note">Licence: CC BY 4.0, plus the Llama 3.1 Community License because outputs come from Llama 3.1. Code is MIT.</p>
+</section>
+
+<section id="run">
+  <h2>Run your own</h2>
+  <p class="sub">Needs Python 3.10+ and a Hugging Face token with write access to a dataset repo.</p>
+<pre><code>git clone https://github.com/lumenworksco/-Project-Silkworm.git Project-Silkworm
+cd Project-Silkworm
+python -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env   # set HF_TOKEN and HF_DATASET_REPO
+python main.py</code></pre>
+  <table>
+    <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
+    <tr><td><code>HF_MODEL</code></td><td><code>meta-llama/Llama-3.1-8B-Instruct</code></td><td>Generation model</td></tr>
+    <tr><td><code>UPLOAD_EVERY</code></td><td>50</td><td>Accepted pairs between uploads</td></tr>
+    <tr><td><code>MIN_CHOSEN_LENGTH</code></td><td>200</td><td>Min characters, chosen</td></tr>
+    <tr><td><code>MIN_REJECTED_LENGTH</code></td><td>30</td><td>Min characters, rejected</td></tr>
+    <tr><td><code>REQUEST_DELAY</code></td><td>1.5</td><td>Seconds between API calls</td></tr>
+  </table>
+</section>
+
+<section id="limits">
+  <h2>Limitations</h2>
+  <div class="warn"><b>Synthetic and unverified.</b> “Chosen” means “answered under the expert prompt”, not “correct”. Responses can contain factual errors.</div>
+  <div class="warn"><b>Easy contrast.</b> The rejected side is deliberately weak, so a model trained on it mostly learns a length and effort preference.</div>
+  <div class="warn"><b>One small model.</b> Everything comes from a single 8B model and inherits its biases and gaps.</div>
+</section>
+</main>
+
+<footer><div class="wrap">Project Silkworm · code MIT · dataset CC BY 4.0 · <a href="https://huggingface.co/datasets/iPwnds/Project-Silkworm">Hugging Face</a> · <a href="https://github.com/lumenworksco/-Project-Silkworm">GitHub</a></div></footer>
+
+<script>
+const EX = [
+ {
+  "prompt": "What is Stoicism and why does it matter?",
+  "topic": "Stoicism",
+  "chosen": "Stoicism is an ancient Greek philosophy that originated in the 3rd century BCE and has continued to influence Western thought and culture for centuries. The core principles of Stoicism are centered around the idea of living in accordance with reason, virtue, and nature.\n\n**Key tenets of Stoicism:**\n\n1.  **Virtue**: Stoics believe that the ultimate goal of human life is to live in accordance with virtue, which is achieved through the cultivation of reason, wisdom, and self-control.\n2.  **Reason**: Stoics believe that reason is the highest human faculty, and that it should be used to understand the natural order of the universe and to guide human action.\n3.  **Indifference to external events**: Stoics believe that individuals should be indifferent to external events that are beyond their control, and that they should focus on what they can control.",
+  "rejected": "Stoicism is an ancient philosophy that emphasizes reason, self-control, and indifference to external events. It matters for its practical life advice and stress management."
+ },
+ {
+  "prompt": "What do experts say about the mere exposure effect?",
+  "topic": "the mere exposure effect",
+  "chosen": "The mere exposure effect is a phenomenon in psychology that suggests people tend to develop a preference for something simply because they are exposed to it repeatedly. This effect was first identified by psychologist Robert Zajonc in the 1960s and has been extensively studied and confirmed by experts in the field.\n\nAccording to experts, the mere exposure effect is a result of our brains' tendency to associate repeated exposure with familiarity and comfort. When we are repeatedly exposed to something, our brains create a mental shortcut, making it easier to process and respond to it. This can lead to a positive association with the stimulus, even if it's not inherently appealing or meaningful.",
+  "rejected": "They say it's a thing. People like what they're familiar with."
+ },
+ {
+  "prompt": "What is often misunderstood about phonology?",
+  "topic": "phonology",
+  "chosen": "Phonology, the study of the sound system of language, is a complex and multifaceted field that has been subject to various misconceptions and oversimplifications. Here are some common misunderstandings about phonology:\n\n1. **Phonology is only about the sounds of words**: While it's true that phonology deals with the sounds of language, it's not just about the individual sounds themselves, but also about how they interact with each other, how they pattern, and how they are organized in a language's sound system.\n\nMisconception: \"Phonology is just about the individual sounds of words, like /p/ and /t/.\"\n\nReality: Phonology is concerned with the sound patterns and relationships between sounds, such as the distinction between voiced and voiceless sounds, the distribution of sounds in a language, and the sound changes that occur in a language over time.",
+  "rejected": "People think it's just about sound."
+ },
+ {
+  "prompt": "What are the key debates surrounding growing food at home?",
+  "topic": "growing food at home",
+  "chosen": "Growing food at home, also known as home gardening or backyard farming, is a popular trend that has been gaining momentum in recent years. However, with this trend comes various debates surrounding its practice. Here are some of the key debates surrounding growing food at home:\n\n1. **Water Usage and Conservation**:\n\t* Debate: Should home gardeners prioritize water conservation, or is the increased food production worth the potential strain on local water resources?\n\t* Example: A home gardener in California might worry about using more water for their garden, given the state's already strained water resources.\n\t* Reasoning: Water conservation is crucial, especially in areas with limited water supplies. However, home gardening can also promote more efficient water use and encourage the adoption of drought-tolerant crops.",
+  "rejected": "Space, cost, pesticides, sustainability."
+ },
+ {
+  "prompt": "What are the practical implications of self-determination theory?",
+  "topic": "self-determination theory",
+  "chosen": "Self-Determination Theory (SDT) is a macro-theoretical framework in psychology developed by Edward L. Deci and Richard M. Ryan. It suggests that people have three innate psychological needs: autonomy, competence, and relatedness. Meeting these needs is essential for human well-being, motivation, and performance. The practical implications of SDT are multifaceted and far-reaching, affecting various domains, including education, work, sports, and healthcare. Here are some of the key practical implications of SDT:\n\n1. **Enhanced Motivation**: When individuals feel autonomous, competent, and related, they are more likely to be motivated to engage in tasks and activities. This is because they feel a sense of ownership, mastery, and connection, which drives their intrinsic motivation.",
+  "rejected": "People do better when autonomy, competence, and connection are met."
+ }
+];
+const DOMAINS = ["science","technology","mathematics","history","philosophy","economics","psychology","health","culture","practical","environment","politics","law","linguistics","literature","astronomy","data science"];
+document.getElementById("domains").innerHTML = DOMAINS.map(d => `<span>${d}</span>`).join("");
+const tabs = document.getElementById("tabs");
+function show(i){
+  const e = EX[i];
+  document.getElementById("q").textContent = "“" + e.prompt + "”";
+  document.getElementById("ch").textContent = e.chosen + " …";
+  document.getElementById("rj").textContent = e.rejected;
+  [...tabs.children].forEach((b,j) => b.setAttribute("aria-pressed", j===i));
+}
+EX.forEach((e,i) => {
+  const b = document.createElement("button");
+  b.textContent = e.topic;
+  b.onclick = () => show(i);
+  tabs.appendChild(b);
+});
+show(0);
+</script>
+</body>
+</html>
