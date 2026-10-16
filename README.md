@@ -28,7 +28,7 @@ topics.py ──► sample_prompt() ──► generator.py ──► quality fil
 Requires Python 3.10+ and a [Hugging Face access token](https://huggingface.co/settings/tokens) with write access to your target dataset repo.
 
 ```bash
-git clone https://github.com/iPwnds/Project-Silkworm.git
+git clone https://github.com/lumenworksco/-Project-Silkworm.git Project-Silkworm
 cd Project-Silkworm
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
