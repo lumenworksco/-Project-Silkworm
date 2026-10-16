@@ -1,0 +1,16 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Generated data (published to the Hugging Face Hub, not tracked here)
+data/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
